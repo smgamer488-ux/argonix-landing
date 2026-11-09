@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="scroll-smooth overflow-x-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ARGONIX | اکوسیستم سه‌بعدی شبکه، طراحی وب و ابزارهای سایبری</title>
+    
+    <!-- فونت‌ها -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Space+Grotesk:wght@500;700&family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'sans-serif'],
+                        num: ['Space Grotesk', 'Vazirmatn', 'sans-serif'],
+                        cyber: ['Orbitron', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --neon-primary: #00f2fe;
+            --neon-secondary: #3b82f6;
+            --neon-rgb: 0, 242, 254;
+            --sec-rgb: 59, 130, 246;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            background-color: #01040a;
+            color: #f1f5f9;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* قفل پس‌زمینه برای جلوگیری از اسکرول افقی */
+        .bg-viewport-lock {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* بافت نویز سینمایی و خطوط اسکن ظریف CRT */
+        .crt-overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 40;
+            opacity: 0.35;
+        }
+
+        /* کف شطرنجی سه‌بعدی پویا با رنگ تم متغیر */
+        .cyber-floor {
+            position: absolute;
+            bottom: -25%;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 78%;
+            background-size: 46px 46px;
+            background-image: 
+                linear-gradient(to right, rgba(var(--neon-rgb), 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(var(--sec-rgb), 0.1) 1px, transparent 1px);
+            transform: perspective(420px) rotateX(68deg) scale(1.35);
+            transform-origin: center bottom;
+            animation: floorMove 8s linear infinite;
+            mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 12%, transparent 85%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.95) 12%, transparent 85%);
+        }
+        @keyframes floorMove {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 46px; }
+        }
+
+        /* شیشه مایع کوانتومی با گوشه‌های HUD و پرتو داخلی */
+        .liquid-glass {
+            position: relative;
+            background: linear-gradient(145deg, rgba(10, 20, 46, 0.76) 0%, rgba(4, 8, 20, 0.92) 100%);
+            backdrop-filter: blur(24px) saturate(200%);
+            -webkit-backdrop-filter: blur(24px) saturate(200%);
+            border: 1px solid rgba(var(--neon-rgb), 0.22);
+            box-shadow: 0 18px 40px -8px rgba(0, 0, 0, 0.8), inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
+            transform-style: preserve-3d;
+            will-change: transform;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease;
+            overflow: hidden;
+        }
+
+        /* گوشه‌های سایبری HUD روی کارت‌ها */
+        .hud-corners::after {
+            content: "";
+            position: absolute;
+            inset: 6px;
+            border-radius: inherit;
+            border: 1px solid transparent;
+            background: 
+                linear-gradient(to right, var(--neon-primary) 8px, transparent 8px) 0 0,
+                linear-gradient(to bottom, var(--neon-primary) 8px, transparent 8px) 0 0,
+                linear-gradient(to left, var(--neon-primary) 8px, transparent 8px) 100% 100%,
+                linear-gradient(to top, var(--neon-primary) 8px, transparent 8px) 100% 100%;
+            background-repeat: no-repeat;
+            background-size: 16px 16px;
+            opacity: 0.35;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .liquid-glass:hover.hud-corners::after {
+            opacity: 0.9;
+        }
+
+        /* هاله نوری دنبال‌کننده موس/لمس */
+        .liquid-glass::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(360px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(var(--neon-rgb), 0.18), transparent 45%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .liquid-glass:hover::before, .liquid-glass:active::before {
+            opacity: 1;
+        }
+        .liquid-glass:hover {
+            border-color: rgba(var(--neon-rgb), 0.65);
+            box-shadow: 0 22px 55px -10px rgba(var(--neon-rgb), 0.28), inset 0 1px 2px 0 rgba(var(--neon-rgb), 0.4);
+        }
+
+        /* افکت اختصاصی درخشش پلاسما هنگام کلیک روی هر کارت یا دکمه */
+        .cyber-clicked {
+            border-color: var(--neon-primary) !important;
+            box-shadow: 0 0 40px rgba(var(--neon-rgb), 0.65), inset 0 0 25px rgba(var(--neon-rgb), 0.35) !important;
+        }
+
+        /* پرتو جاروب‌کننده لیزری هنگام کلیک روی گزینه (Laser Sweep) */
+        .laser-sweep-beam {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 75%;
+            background: linear-gradient(90deg, transparent, rgba(var(--neon-rgb), 0.45), rgba(255,255,255,0.8), transparent);
+            transform: skewX(-25deg) translateX(180%);
+            pointer-events: none;
+            z-index: 30;
+            animation: sweepAcross 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes sweepAcross {
+            0% { transform: skewX(-25deg) translateX(180%); opacity: 1; }
+            100% { transform: skewX(-25deg) translateX(-220%); opacity: 0; }
+        }
+
+        /* کارت ویژه VIP */
+        .vip-card-glow {
+            border: 1.5px solid rgba(var(--neon-rgb), 0.75) !important;
+            box-shadow: 0 0 40px rgba(var(--neon-rgb), 0.26), inset 0 0 22px rgba(var(--neon-rgb), 0.12) !important;
+        }
+
+        /* رآکتور سه‌بعدی ژیروسکوپ دور کره 3D */
+        .gyro-scene {
+            width: 220px;
+            height: 220px;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+        .gyro-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            transform-style: preserve-3d;
+            pointer-events: none;
+        }
+        .ring-1 {
+            border: 2px dashed rgba(var(--neon-rgb), 0.6);
+            box-shadow: 0 0 20px rgba(var(--neon-rgb), 0.25);
+            animation: gyroSpin1 9s linear infinite;
+        }
+        .ring-2 {
+            inset: 12px;
+            border: 2px solid transparent;
+            border-top-color: var(--neon-primary);
+            border-bottom-color: var(--neon-secondary);
+            filter: drop-shadow(0 0 10px var(--neon-primary));
+            animation: gyroSpin2 6s linear infinite;
+        }
+        .ring-3 {
+            inset: 24px;
+            border: 1.5px solid rgba(var(--neon-rgb), 0.35);
+            border-left-color: #ffffff;
+            animation: gyroSpin3 11s linear infinite reverse;
+        }
+        @keyframes gyroSpin1 {
+            0% { transform: rotateX(64deg) rotateY(15deg) rotateZ(0deg); }
+            100% { transform: rotateX(64deg) rotateY(15deg) rotateZ(360deg); }
+        }
+        @keyframes gyroSpin2 {
+            0% { transform: rotateX(-45deg) rotateY(45deg) rotateZ(0deg); }
+            100% { transform: rotateX(-45deg) rotateY(45deg) rotateZ(360deg); }
+        }
+        @keyframes gyroSpin3 {
+            0% { transform: rotateY(70deg) rotateX(12deg) rotateZ(0deg); }
+            100% { transform: rotateY(70deg) rotateX(12deg) rotateZ(360deg); }
+        }
+
+        /* پرتو اسکنر هولوگرام */
+        .holo-scanline {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-primary), transparent);
+            box-shadow: 0 0 14px var(--neon-primary);
+            opacity: 0.7;
+            animation: scanMove 3.2s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 20;
+        }
+        @keyframes scanMove {
+            0%, 100% { top: 6%; opacity: 0.2; }
+            50% { top: 94%; opacity: 0.85; }
+        }
+
+        /* دکمه‌ها و گرادینت‌های پویا */
+        .interactive-press {
+            transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+        .interactive-press:active {
+            transform: scale(0.94) !important;
+        }
+
+        .text-ax-gradient {
+            background: linear-gradient(90deg, #ffffff 0%, var(--neon-primary) 55%, var(--neon-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .btn-ax {
+            background: linear-gradient(135deg, var(--neon-secondary) 0%, var(--neon-primary) 100%);
+            box-shadow: 0 0 25px rgba(var(--neon-rgb), 0.45);
+            transition: all 0.3s ease;
+        }
+        .btn-ax:hover {
+            box-shadow: 0 0 38px rgba(var(--neon-rgb), 0.85);
+            transform: translateY(-2px);
+        }
+
+        /* موج شوک دوگانه هنگام کلیک */
+        .click-shockwave {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            border: 2px solid var(--neon-primary);
+            box-shadow: 0 0 25px var(--neon-primary), inset 0 0 15px var(--neon-primary);
+            animation: shockwaveAnim 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes shockwaveAnim {
+            0% { width: 0px; height: 0px; opacity: 1; border-width: 4px; }
+            100% { width: 170px; height: 170px; opacity: 0; border-width: 0px; }
+        }
+        .click-spark {
+            position: fixed;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 12px var(--neon-primary), 0 0 20px var(--neon-primary);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* فلش EMP هنگام تعویض تم نئونی */
+        .emp-flash {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, rgba(var(--neon-rgb), 0.45) 0%, transparent 75%);
+            pointer-events: none;
+            z-index: 9998;
+            animation: empAnim 0.55s ease-out forwards;
+        }
+        @keyframes empAnim {
+            0% { opacity: 1; transform: scale(0.8); }
+            100% { opacity: 0; transform: scale(1.4); }
+        }
+
+        /* نوار متحرک */
+        @keyframes marquee {
+            0% { transform: translateX(0%); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            display: inline-flex;
+            white-space: nowrap;
+            animation: marquee 20s linear infinite;
+        }
+    </style>
+</head>
+<body class="relative selection:bg-cyan-400 selection:text-slate-950 pb-20">
+
+    <!-- لایه خطوط ظریف مانیتور سایبری -->
+    <div class="crt-overlay"></div>
+
+    <!-- لایه قفل‌شده پس‌زمینه -->
+    <div class="bg-viewport-lock">
+        <canvas id="cyberCanvas" class="w-full h-full opacity-80"></canvas>
+        <div class="cyber-floor"></div>
+        <div id="glowOrb1" class="absolute -top-32 -right-32 w-80 h-80 bg-blue-600/20 rounded-full blur-[125px] transition-colors duration-700"></div>
+        <div id="glowOrb2" class="absolute top-1/2 -left-32 w-80 h-80 bg-cyan-400/15 rounded-full blur-[135px] transition-colors duration-700"></div>
+    </div>
+
+    <!-- هدر شناور شیشه‌ای با سوییچر تم نئونی -->
+    <header class="fixed top-3 inset-x-0 z-50 px-3 sm:px-6 max-w-6xl mx-auto">
+        <nav class="liquid-glass hud-corners rounded-2xl px-3.5 sm:px-5 py-2.5 flex items-center justify-between">
+            <!-- لوگو -->
+            <a href="#" class="flex items-center gap-2.5 group interactive-press relative z-10">
+                <div class="w-10 h-10 rounded-xl bg-slate-950/95 border border-cyan-400/50 flex items-center justify-center shadow-[0_0_18px_rgba(var(--neon-rgb),0.4)]">
+                    <svg viewBox="0 0 120 80" class="w-8 h-8">
+                        <defs>
+                            <linearGradient id="axGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#3b82f6"/>
+                                <stop offset="50%" stop-color="#38bdf8"/>
+                                <stop offset="100%" stop-color="#00f2fe"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M12 68 L38 12 L62 68 M22 50 L52 50" stroke="url(#axGrad)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        <path d="M58 12 L106 68 M106 12 L58 68" stroke="url(#axGrad)" stroke-width="8" stroke-linecap="round" fill="none"/>
+                    </svg>
+                </div>
+                <div class="flex flex-col text-right">
+                    <span class="font-cyber text-base sm:text-lg font-black tracking-wider text-ax-gradient">ARGONIX</span>
+                    <span class="text-[9px] font-num tracking-wider text-slate-300/80 -mt-1">QUANTUM WEB &amp; VPN LABS</span>
+                </div>
+            </a>
+
+            <!-- منوی دسکتاپ -->
+            <ul class="hidden md:flex items-center gap-6 text-xs lg:text-sm font-medium text-slate-300 relative z-10">
+                <li><a href="#vpn" class="hover:text-white transition">اشتراک VIP</a></li>
+                <li><a href="#web-studio" class="hover:text-white transition">استودیو وب 3D</a></li>
+                <li><a href="#estimator" class="hover:text-white transition">کانفیگوراتور</a></li>
+                <li><a href="#tools" class="hover:text-white transition flex items-center gap-1.5">
+                    <span>رادار و ابزارها</span>
+                    <span class="px-1.5 py-0.5 text-[10px] rounded bg-white/10 text-white border border-white/20">PRO</span>
+                </a></li>
+            </ul>
+
+            <!-- کنترلرها: تغییر تم نئونی + صدا + پورتال سفارش -->
+            <div class="flex items-center gap-1.5 sm:gap-2 relative z-10">
+                <button onclick="cycleNeonTheme()" title="تغییر شیدر و رنگ نئون سایت" class="interactive-press px-2.5 h-9 rounded-xl bg-slate-900/90 border border-white/15 text-xs font-bold flex items-center gap-1.5 text-slate-200">
+                    <span id="themeDot" class="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#00f2fe]"></span>
+                    <span class="hidden sm:inline text-[11px]" id="themeName">تم فیروزه‌ای</span>
+                </button>
+                <button id="soundToggleBtn" onclick="toggleSound()" title="سینتی‌سایزر صوتی" class="interactive-press w-9 h-9 rounded-xl bg-slate-900/90 border border-white/15 text-slate-200 flex items-center justify-center text-xs">
+                    🔊
+                </button>
+                <button onclick="openOrderModal('ارتباط مستقیم با ربات و پشتیبانی آرگونیکس', 'تحویل آنی اشتراک و ثبت پروژه', 'VIP GATEWAY')" class="btn-ax interactive-press text-slate-950 font-extrabold text-xs px-3.5 sm:px-4 py-2.5 rounded-xl flex items-center gap-1.5">
+                    <span>پورتال آرگونیکس</span>
+                    <span class="text-sm leading-none">⚡</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- داک شناور پایین صفحه (Floating Cyber HUD Dock) مخصوص دسترسی سریع موبایل و دسکتاپ -->
+    <div class="fixed bottom-3 inset-x-0 z-40 px-3 flex justify-center pointer-events-none">
+        <div class="liquid-glass rounded-2xl px-3 py-2 flex items-center gap-2 sm:gap-4 pointer-events-auto border border-white/20 shadow-2xl">
+            <a href="#hero" class="interactive-press px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-200 hover:bg-white/10 flex items-center gap-1">
+                <span>🌐</span><span>هسته 3D</span>
+            </a>
+            <a href="#vpn" class="interactive-press px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-200 hover:bg-white/10 flex items-center gap-1">
+                <span>🚀</span><span>اشتراک‌ها</span>
+            </a>
+            <a href="#web-studio" class="interactive-press px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-200 hover:bg-white/10 flex items-center gap-1">
+                <span>💎</span><span>طراحی وب</span>
+            </a>
+            <a href="#tools" class="interactive-press px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-slate-200 hover:bg-white/10 flex items-center gap-1">
+                <span>📡</span><span>رادار</span>
+            </a>
+            <button onclick="cycleNeonTheme()" class="interactive-press px-2.5 py-1.5 rounded-xl bg-white/10 text-[11px] font-bold text-white flex items-center gap-1">
+                <span>🎨</span><span>شیدر نئون</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- بدنه اصلی -->
+    <main id="hero" class="relative z-10 pt-24 pb-12 px-3 sm:px-6 max-w-6xl mx-auto space-y-12">
+
+        <!-- بخش اول: HERO SECTION مجهز به کره سه‌بعدی تعاملی (3D Cyber Globe) -->
+        <section class="grid md:grid-cols-12 gap-6 lg:gap-8 items-center pt-1">
+            
+            <!-- ستون راست -->
+            <div class="md:col-span-7 space-y-5 text-right hero-anim">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full liquid-glass text-[11px] sm:text-xs text-slate-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>موتور گرافیکی سه‌بعدی v4.0 + زیرساخت ضد فیلتر PasarGuard</span>
+                </div>
+
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.25]">
+                    مهندسی آینده وب و ارتباطات آزاد در
+                    <span id="scrambleHero" onclick="scrambleElement(this)" class="font-cyber text-ax-gradient block mt-1.5 tracking-wide cursor-pointer" title="برای افکت رمزشکنی کلیک کنید">ARGONIX STUDIO</span>
+                </h1>
+
+                <p class="text-slate-300/90 text-sm sm:text-base leading-relaxed">
+                    ما در <strong class="text-white">آرگونیکس</strong> گرافیک سایبرنتیک سه‌بعدی را با مهندسی شبکه ترکیب کرده‌ایم: ارائه اشتراک‌های اختصاصی <span class="font-num font-bold text-xs text-white bg-white/10 px-2 py-0.5 rounded border border-white/20">VLESS xHTTP / Reality</span>، طراحی وب‌سایت‌های تعاملی، قالب پنل و ربات‌های اتوماسیون تلگرام.
+                </p>
+
+                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
+                    <a href="#vpn" class="btn-ax interactive-press text-slate-950 font-extrabold px-5 sm:px-6 py-3.5 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+                        <span>دریافت اشتراک VIP</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    </a>
+                    <button onclick="openDemoModal()" class="liquid-glass hud-corners interactive-press px-4 sm:px-5 py-3.5 rounded-xl text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                        <span>دموی زنده قالب ساب</span>
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    </button>
+                    <button onclick="cycleNeonTheme()" class="liquid-glass interactive-press px-4 py-3.5 rounded-xl text-xs sm:text-sm font-bold text-slate-200">
+                        تغییر افکت نئون ⚡
+                    </button>
+                </div>
+
+                <!-- باکس‌های آمار شمارش‌شونده از صفر (کلیک روی هر کدام دوباره شمارش و رمزشکنی را اجرا می‌کند) -->
+                <div class="grid grid-cols-3 gap-2.5 sm:gap-3.5 pt-2">
+                    <div onclick="retriggerCounter(this)" class="tilt-3d liquid-glass hud-corners interactive-press rounded-2xl p-3 sm:p-4 text-center">
+                        <div dir="ltr" class="font-num text-xl sm:text-2xl lg:text-3xl font-bold text-ax-gradient whitespace-nowrap">
+                            <span class="counter" data-target="99.9" data-decimals="1">0</span>%
+                        </div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-1 font-medium">آپتایم نودهای اروپا</div>
+                    </div>
+
+                    <div onclick="retriggerCounter(this)" class="tilt-3d liquid-glass hud-corners interactive-press rounded-2xl p-3 sm:p-4 text-center">
+                        <div dir="ltr" class="font-num text-xl sm:text-2xl lg:text-3xl font-bold text-white whitespace-nowrap">
+                            +<span class="counter" data-target="285" data-decimals="0">0</span> <span class="text-sm sm:text-base font-semibold text-slate-300">GB</span>
+                        </div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-1 font-medium">ترافیک پایدار هفتگی</div>
+                    </div>
+
+                    <div onclick="retriggerCounter(this)" class="tilt-3d liquid-glass hud-corners interactive-press rounded-2xl p-3 sm:p-4 text-center">
+                        <div dir="ltr" class="font-num text-xl sm:text-2xl lg:text-3xl font-bold text-emerald-400 whitespace-nowrap">
+                            <span class="counter" data-target="42" data-decimals="0">0</span> <span class="text-sm sm:text-base font-semibold text-emerald-300">ms</span>
+                        </div>
+                        <div class="text-[11px] sm:text-xs text-slate-400 mt-1 font-medium">پینگ بهینه گیم و ترید</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ستون چپ: کره سه‌بعدی سایبری (3D Interactive Globe) + رآکتور AX -->
+            <div class="md:col-span-5 hero-anim">
+                <div class="tilt-3d liquid-glass hud-corners rounded-3xl p-5 sm:p-6 relative group">
+                    <div class="holo-scanline"></div>
+
+                    <!-- صحنه سه‌بعدی: کره چرخان شبکه جهانی + حلقه‌های ژیروسکوپ + هسته AX -->
+                    <div class="relative z-10 flex flex-col items-center justify-center py-2 border-b border-slate-800/80">
+                        <div class="gyro-scene flex items-center justify-center" onclick="boostGlobeSpin()">
+                            <!-- بوم کره سه‌بعدی چرخان در پس‌زمینه لوگو -->
+                            <canvas id="globeCanvas" width="220" height="220" class="absolute inset-0 w-full h-full cursor-pointer"></canvas>
+                            
+                            <div class="gyro-ring ring-1"></div>
+                            <div class="gyro-ring ring-2"></div>
+                            <div class="gyro-ring ring-3"></div>
+                            
+                            <!-- هسته مرکزی لوگو -->
+                            <div class="w-20 h-20 rounded-full bg-slate-950/90 border border-white/30 flex flex-col items-center justify-center shadow-[0_0_35px_rgba(var(--neon-rgb),0.55)] relative z-20 backdrop-blur-md pointer-events-none">
+                                <svg viewBox="0 0 140 90" class="w-14 h-10">
+                                    <path d="M15 76 L45 14 L72 76 M26 55 L60 55" stroke="url(#axGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                    <path d="M68 14 L124 76 M124 14 L68 76" stroke="url(#axGrad)" stroke-width="9" stroke-linecap="round" fill="none"/>
+                                </svg>
+                                <span class="font-cyber text-[7px] font-black tracking-[0.22em] text-ax-gradient">ARGONIX</span>
+                            </div>
+                        </div>
+                        <span class="mt-2 font-num text-[10px] font-bold text-slate-300 tracking-widest uppercase">3D Global Mesh • Tap Globe To Boost</span>
+                    </div>
+
+                    <!-- تله‌متری زنده سرور هلسینکی -->
+                    <div class="relative z-10 pt-4 space-y-2.5 text-xs font-num" dir="ltr">
+                        <div class="flex items-center justify-between">
+                            <span class="flex items-center gap-2 text-slate-200 font-bold">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#34d399]"></span>
+                                Helsinki 🇫🇮 (Pro Node)
+                            </span>
+                            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-500/40">ONLINE • 13.140.80.51</span>
+                        </div>
+
+                        <div class="bg-slate-950/85 rounded-xl p-3 border border-slate-800/90 space-y-2 text-[11px]">
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Active Protocols:</span>
+                                <span class="text-white font-semibold">VLESS-xHTTP / Trojan-Reality</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Sub Gateway:</span>
+                                <span class="text-ax-gradient font-bold">sub.painshop.com.tr</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-slate-400">Hardware Telemetry:</span>
+                                <span class="text-emerald-400 font-semibold">CPU 6.9% | RAM 0.8/1.9 GB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- نوار متحرک تکنولوژی -->
+        <div class="liquid-glass rounded-2xl py-2.5 px-4 overflow-hidden w-full" dir="ltr">
+            <div class="animate-marquee items-center gap-8 text-xs font-num font-bold text-slate-300">
+                <span class="mx-4">⚡ VLESS XHTTP TUNNEL</span>
+                <span class="mx-4">🛡️ TROJAN REALITY TLS 1.3</span>
+                <span class="mx-4">🇫🇮 FINLAND DEDICATED NODE</span>
+                <span class="mx-4">💎 3D WEBGL &amp; LIQUID GLASS UI</span>
+                <span class="mx-4">🤖 TELEGRAM BOT AUTOMATION</span>
+                <span class="mx-4">🚀 PASARGUARD &amp; MARZBAN TEMPLATES</span>
+                <span class="mx-4">⚡ VLESS XHTTP TUNNEL</span>
+                <span class="mx-4">🛡️ TROJAN REALITY TLS 1.3</span>
+                <span class="mx-4">🇫🇮 FINLAND DEDICATED NODE</span>
+                <span class="mx-4">💎 3D WEBGL &amp; LIQUID GLASS UI</span>
+            </div>
+        </div>
+
+        <!-- بخش دوم: پلن‌های اشتراک VPN (متصل به پورتال هولوگرافیک سفارش) -->
+        <section id="vpn" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                    <span class="text-xs font-num font-bold tracking-widest text-slate-400 uppercase">High-Speed Tunneling</span>
+                    <h2 class="text-2xl sm:text-3xl font-black mt-0.5">اشتراک‌های اختصاصی <span class="text-ax-gradient">ARGONIX VIP</span></h2>
+                </div>
+                <p class="text-slate-400 text-xs sm:text-sm">روی هر پلن کلیک کنید تا فاکتور هولوگرافیک و کد پیگیری آنی صادر شود</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-5">
+                <!-- پلن ۱ -->
+                <div onclick="openOrderModal('پلن اقتصادی (STARTER)', '۵۰ گیگابایت • ۳۰ روزه • ۲ کاربره', 'VLESS xHTTP + VMess')" class="tilt-3d liquid-glass hud-corners interactive-press rounded-3xl p-6 flex flex-col justify-between">
+                    <div class="space-y-4 relative z-10">
+                        <div class="flex justify-between items-center">
+                            <span class="text-base font-bold text-slate-200">پلن اقتصادی</span>
+                            <span class="font-num font-bold text-[11px] px-2.5 py-0.5 rounded-lg bg-white/10 text-slate-200 border border-white/20">STARTER</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span dir="ltr" class="font-num text-3xl font-bold text-white">50 GB</span>
+                            <span class="text-xs text-slate-400">/ ۳۰ روزه</span>
+                        </div>
+                        <ul class="space-y-2.5 text-xs sm:text-sm text-slate-300 border-t border-slate-800/80 pt-4">
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> لوکیشن فنلاند (Helsinki Pro)</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> پروتکل VLESS xHTTP + VMess</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> لینک ساب هوشمند ضد فیلتر</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> ۲ کاربر همزمان</li>
+                        </ul>
+                    </div>
+                    <button class="relative z-10 mt-6 w-full py-3 rounded-xl border border-white/25 text-white hover:bg-white hover:text-slate-950 font-bold text-center text-xs sm:text-sm transition">
+                        صدور آنی سفارش (۵۰ گیگ) ⚡
+                    </button>
+                </div>
+
+                <!-- پلن ۲ (ویژه) -->
+                <div onclick="openOrderModal('پلن حرفه‌ای گیم و ترید (ARGONIX PRO)', '۱۰۰ گیگابایت • ۳۰ روزه • آی‌پی ثابت VIP', 'Trojan Reality + VLESS xHTTP')" class="tilt-3d liquid-glass hud-corners vip-card-glow interactive-press rounded-3xl p-6 flex flex-col justify-between">
+                    <div class="space-y-4 relative z-10">
+                        <div class="flex justify-between items-center">
+                            <span class="text-base font-bold text-white">حرفه‌ای گیم و ترید</span>
+                            <span class="px-2.5 py-0.5 rounded-full btn-ax text-slate-950 font-extrabold text-[11px]">پرفروش‌ترین</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span dir="ltr" class="font-num text-3xl font-bold text-ax-gradient">100 GB</span>
+                            <span class="text-xs text-slate-400">/ ۳۰ روزه</span>
+                        </div>
+                        <ul class="space-y-2.5 text-xs sm:text-sm text-slate-200 border-t border-slate-800/80 pt-4">
+                            <li class="flex items-center gap-2"><span>⚡</span> دسترسی به تمام نودهای VIP فنلاند</li>
+                            <li class="flex items-center gap-2"><span>⚡</span> تانل Trojan Reality + xHTTP</li>
+                            <li class="flex items-center gap-2"><span>⚡</span> آی‌پی ثابت و تمیز بدون کپچا</li>
+                            <li class="flex items-center gap-2"><span>⚡</span> پشتیبانی مستقیم ۲۴ ساعته</li>
+                        </ul>
+                    </div>
+                    <button class="relative z-10 mt-6 w-full py-3 rounded-xl btn-ax text-slate-950 font-extrabold text-center text-xs sm:text-sm">
+                        خرید آنی اشتراک VIP (۱۰۰ گیگ)
+                    </button>
+                </div>
+
+                <!-- پلن ۳ -->
+                <div onclick="openOrderModal('پلن نامحدود تیمی (ULTIMATE)', '۲۵۰ گیگابایت • ۶۰ روزه • ۵ دستگاه همزمان', 'Full Node Priority Access')" class="tilt-3d liquid-glass hud-corners interactive-press rounded-3xl p-6 flex flex-col justify-between">
+                    <div class="space-y-4 relative z-10">
+                        <div class="flex justify-between items-center">
+                            <span class="text-base font-bold text-slate-200">پلن نامحدود تیمی</span>
+                            <span class="font-num font-bold text-[11px] px-2.5 py-0.5 rounded-lg bg-purple-500/20 text-purple-300 border border-purple-400/30">ULTIMATE</span>
+                        </div>
+                        <div class="flex items-baseline gap-2">
+                            <span dir="ltr" class="font-num text-3xl font-bold text-white">250 GB</span>
+                            <span class="text-xs text-slate-400">/ ۶۰ روزه</span>
+                        </div>
+                        <ul class="space-y-2.5 text-xs sm:text-sm text-slate-300 border-t border-slate-800/80 pt-4">
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> بالاترین اولویت پهنای باند سرور</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> مناسب دانلود سنگین و استریم 4K</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> سازگار با تمام سیستم‌عامل‌ها</li>
+                            <li class="flex items-center gap-2"><span class="text-emerald-400">✔</span> تا ۵ دستگاه همزمان</li>
+                        </ul>
+                    </div>
+                    <button class="relative z-10 mt-6 w-full py-3 rounded-xl border border-white/25 text-white hover:bg-white hover:text-slate-950 font-bold text-center text-xs sm:text-sm transition">
+                        صدور آنی سفارش (۲۵۰ گیگ) ⚡
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- بخش سوم: ویترین طراحی وب + کانفیگوراتور هوشمند سفارش پروژه -->
+        <section id="web-studio" class="space-y-6">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div class="space-y-1">
+                    <span class="text-xs font-num font-bold tracking-widest text-slate-400 uppercase">Argonix 3D Web Engineering</span>
+                    <h2 class="text-2xl sm:text-3xl font-black">طراحی وب‌سایت، لندینگ‌پیج و <span class="text-ax-gradient">قالب‌های اختصاصی</span></h2>
+                    <p class="text-slate-400 text-xs sm:text-sm max-w-2xl">
+                        همین رابط کاربری سه‌بعدی، شیدرهای نئونی و افکت‌های تعاملی، استاندارد طراحی ما برای پروژه برند شماست.
+                    </p>
+                </div>
+                <button onclick="openDemoModal()" class="liquid-glass hud-corners interactive-press px-4 py-2.5 rounded-xl text-xs font-bold text-white border border-white/25 self-start md:self-auto">
+                    باز کردن شبیه‌ساز زنده قالب ساب 👁️
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-5">
+                <div onclick="openOrderModal('طراحی لندینگ‌پیج سایبری و سه‌بعدی', 'تحویل ۳ تا ۴ روزه • ریسپانسیو کامل', 'Tailwind + GSAP + 3D Canvas')" class="tilt-3d liquid-glass hud-corners interactive-press rounded-3xl p-5 space-y-4 group">
+                    <div class="h-36 rounded-2xl bg-gradient-to-br from-blue-950 via-slate-900 to-cyan-950 border border-white/15 p-3.5 flex flex-col justify-between relative z-10">
+                        <div class="flex justify-between items-center">
+                            <div class="flex gap-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                            </div>
+                            <span class="font-num text-[10px] text-white bg-white/10 px-2 py-0.5 rounded">3D GLASS UI</span>
+                        </div>
+                        <div class="space-y-2 my-auto">
+                            <div class="w-3/4 h-2.5 rounded bg-cyan-400/50 group-hover:w-full transition-all duration-500"></div>
+                            <div class="w-1/2 h-2 rounded bg-blue-400/35"></div>
+                        </div>
+                        <span class="font-num text-[10px] font-bold text-slate-300 self-end">CLICK TO ORDER PROJECT</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white relative z-10">لندینگ‌پیج‌های سایبری و مدرن</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed relative z-10">
+                        طراحی صفحات فرود اختصاصی با افکت‌های شیشه‌ای، انیمیشن‌های سه‌بعدی و سرعت لود فوق‌العاده برای برندهای دیجیتال و سرویس‌های شبکه.
+                    </p>
+                </div>
+
+                <div onclick="openDemoModal()" class="tilt-3d liquid-glass hud-corners interactive-press rounded-3xl p-5 space-y-4 group">
+                    <div class="h-36 rounded-2xl bg-gradient-to-br from-indigo-950 via-slate-900 to-blue-950 border border-white/15 p-3.5 flex flex-col justify-between relative z-10">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-num font-bold text-white px-2 py-0.5 rounded bg-white/10">SUBSCRIPTION UI</span>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        </div>
+                        <div class="my-auto text-center font-num text-base font-bold text-ax-gradient tracking-wide">
+                            PASARGUARD &amp; MARZBAN
+                        </div>
+                        <span class="font-num text-[10px] font-bold text-slate-300 self-end">CLICK TO LAUNCH LIVE DEMO</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white relative z-10">قالب اختصاصی لینک ساب و پنل</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed relative z-10">
+                        قالب‌های گرافیکی برای صفحه Subscription پاسارگارد و مرزبان با نمایش زنده حجم، QR کد، پینگ نودها و آموزش اتصال.
+                    </p>
+                </div>
+
+                <div onclick="openOrderModal('توسعه ربات فروشگاهی و اتوماسیون تلگرام', 'متصل به API پاسارگارد و مرزبان', 'Python / Node.js + Panel API')" class="tilt-3d liquid-glass hud-corners interactive-press rounded-3xl p-5 space-y-4 group">
+                    <div class="h-36 rounded-2xl bg-gradient-to-br from-slate-900 via-cyan-950/60 to-slate-950 border border-white/15 p-3.5 flex flex-col justify-between relative z-10" dir="ltr">
+                        <span class="text-[10px] font-num text-emerald-400">bot.argonix.api // connected</span>
+                        <div class="my-auto space-y-1.5 font-num text-[11px] text-slate-300">
+                            <div class="bg-slate-950/80 px-2.5 py-1 rounded border border-slate-800">&gt; /create_sub_vip</div>
+                            <div class="bg-emerald-950/60 text-emerald-300 px-2.5 py-1 rounded border border-emerald-500/30">✔ Instant Delivery!</div>
+                        </div>
+                        <span class="font-num text-[10px] font-bold text-emerald-300 self-end">TELEGRAM BOT &amp; API</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white relative z-10">ربات‌های تلگرام و اتوماسیون فروش</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed relative z-10">
+                        توسعه ربات‌های فروشگاهی متصل به API پنل پاسارگارد، تحویل و تمدید آنی اشتراک، مدیریت نمایندگان و درگاه پرداخت.
+                    </p>
+                </div>
+            </div>
+
+            <!-- کانفیگوراتور هوشمند سفارش پروژه با افکت رمزشکنی سایبری -->
+            <div id="estimator" class="liquid-glass hud-corners rounded-3xl p-5 sm:p-7">
+                <div class="grid md:grid-cols-12 gap-6 items-center relative z-10">
+                    <div class="md:col-span-7 space-y-4">
+                        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/10 text-white text-xs font-bold">
+                            <span>⚡ کانفیگوراتور هوشمند پروژه آرگونیکس</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-black text-white">پروژه اختصاصی خودتان را پیکربندی کنید</h3>
+                        <p class="text-xs sm:text-sm text-slate-400">روی هر گزینه کلیک کنید تا سیستم، مشخصات فنی و زمان تحویل پروژه را رمزگشایی کند:</p>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                            <button onclick="selectProject(0, 'قالب اختصاصی لینک ساب', '۲ روز کاری', 'PasarGuard / Marzban UI')" class="proj-btn interactive-press p-3 rounded-2xl border border-cyan-400 bg-white/10 text-right transition">
+                                <span class="text-xs font-bold text-white block">قالب لینک ساب</span>
+                                <span class="text-[10px] text-slate-300 font-num">Sub Template</span>
+                            </button>
+                            <button onclick="selectProject(1, 'لندینگ‌پیج سه‌بعدی و شیشه‌ای', '۴ روز کاری', 'Tailwind + GSAP 3D')" class="proj-btn interactive-press p-3 rounded-2xl border border-slate-800 bg-slate-950/70 text-right transition">
+                                <span class="text-xs font-bold text-white block">سایت و لندینگ‌پیج</span>
+                                <span class="text-[10px] text-slate-400 font-num">Full 3D Web UI</span>
+                            </button>
+                            <button onclick="selectProject(2, 'پکیج کامل (سایت + قالب + ربات)', '۶ روز کاری', 'Full Ecosystem + API')" class="proj-btn interactive-press p-3 rounded-2xl border border-slate-800 bg-slate-950/70 text-right transition col-span-2 sm:col-span-1">
+                                <span class="text-xs font-bold text-white block">پکیج کامل برندینگ</span>
+                                <span class="text-[10px] text-slate-400 font-num">Web + Sub + Bot</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-5 bg-slate-950/90 rounded-2xl p-5 border border-slate-800 space-y-4">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                            <span class="text-xs text-slate-400">سرویس انتخابی:</span>
+                            <span id="estTitle" class="text-xs sm:text-sm font-bold text-white">قالب اختصاصی لینک ساب</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">تکنولوژی ساخت:</span>
+                            <span id="estTech" class="font-num font-bold text-ax-gradient">PasarGuard / Marzban UI</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-400">زمان تحویل تضمینی:</span>
+                            <span id="estTime" class="font-bold text-emerald-400">۲ روز کاری</span>
+                        </div>
+                        <button onclick="triggerEstimatorOrder()" class="btn-ax interactive-press w-full py-3 rounded-xl text-slate-950 font-extrabold text-center text-xs block">
+                            ثبت و دریافت کد پیگیری این پروژه ←
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- بخش چهارم: آزمایشگاه ابزارهای آنلاین با اسیلوسکوپ زنده شبکه -->
+        <section id="tools" class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                <div>
+                    <span class="text-xs font-num font-bold tracking-widest text-slate-400 uppercase">Argonix Cyber Utilities</span>
+                    <h2 class="text-2xl sm:text-3xl font-black mt-0.5">جعبه ابزار آنلاین <span class="text-ax-gradient">ARGONIX LABS</span></h2>
+                </div>
+                <p class="text-slate-400 text-xs sm:text-sm">مجهز به اسیلوسکوپ زنده نوسان پینگ، تولید کلید رمزنگاری و کالبدشکاف کانفیگ</p>
+            </div>
+
+            <div class="grid md:grid-cols-12 gap-5">
+                <!-- ابزار ۱: رادار زنده IP + اسیلوسکوپ گرافیکی پینگ -->
+                <div class="md:col-span-6 tilt-3d liquid-glass hud-corners rounded-3xl p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800/90 pb-3.5 relative z-10">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-white">رادار IP و اسیلوسکوپ پینگ</h3>
+                            <p class="text-[11px] text-slate-400">مانیتورینگ گرافیکی اتصال شما به شبکه کلودفلر</p>
+                        </div>
+                        <button onclick="checkUserNetwork()" class="interactive-press px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold transition">
+                            اسکن رادار ↻
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 text-xs relative z-10" dir="ltr">
+                        <div class="bg-slate-950/85 p-3 rounded-2xl border border-slate-800/90">
+                            <span class="text-slate-400 text-[10px] block mb-0.5">Your IP Address:</span>
+                            <span id="userIp" class="font-num text-xs sm:text-sm text-white font-bold truncate block">Scanning...</span>
+                        </div>
+                        <div class="bg-slate-950/85 p-3 rounded-2xl border border-slate-800/90">
+                            <span class="text-slate-400 text-[10px] block mb-0.5">Region / Edge DataCenter:</span>
+                            <span id="userLoc" class="font-num text-xs sm:text-sm text-white font-bold truncate block">Detecting...</span>
+                        </div>
+                    </div>
+
+                    <!-- نمودار زنده نوسان شبکه (Live Latency Oscilloscope) -->
+                    <div class="bg-slate-950/90 p-3 rounded-2xl border border-slate-800/90 relative z-10" dir="ltr">
+                        <div class="flex justify-between items-center text-[11px] font-num mb-1.5">
+                            <span class="text-slate-400">LIVE LATENCY WAVEFORM:</span>
+                            <span id="cfPing" class="text-emerald-400 font-bold">-- ms</span>
+                        </div>
+                        <canvas id="pingWaveCanvas" height="46" class="w-full h-11 rounded bg-slate-900/60"></canvas>
+                    </div>
+                </div>
+
+                <!-- ابزار ۲: تولیدکننده UUID v4 و Reality ShortID -->
+                <div class="md:col-span-6 tilt-3d liquid-glass hud-corners rounded-3xl p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800/90 pb-3.5 relative z-10">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-white">تولیدکننده UUID v4 و ShortID</h3>
+                            <p class="text-[11px] text-slate-400">ساخت آنی کلیدهای رمزنگاری با افکت رمزشکنی</p>
+                        </div>
+                        <button onclick="generateTokens()" class="btn-ax interactive-press text-slate-950 px-3.5 py-2 rounded-xl text-xs font-extrabold">
+                            تولید کلید جدید ⚡
+                        </button>
+                    </div>
+
+                    <div class="space-y-3 relative z-10" dir="ltr">
+                        <div class="bg-slate-950/85 p-3.5 rounded-2xl border border-slate-800/90 flex items-center justify-between gap-2">
+                            <div class="truncate">
+                                <span class="text-[10px] text-slate-400 block">UUID v4 (VLESS / Node API Key):</span>
+                                <code id="uuidOutput" class="font-num text-xs sm:text-sm text-white font-bold">ab811288-a28b-4c33-9e36-3e3a8fd6a51e</code>
+                            </div>
+                            <button onclick="copyText('uuidOutput', this)" class="interactive-press px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-white hover:text-slate-950 font-bold text-xs text-slate-200 transition shrink-0">Copy</button>
+                        </div>
+
+                        <div class="bg-slate-950/85 p-3.5 rounded-2xl border border-slate-800/90 flex items-center justify-between gap-2">
+                            <div class="truncate">
+                                <span class="text-[10px] text-slate-400 block">Reality ShortID (16-Char Hex):</span>
+                                <code id="shortIdOutput" class="font-num text-xs sm:text-sm text-emerald-400 font-bold">9a30f82c199b8c4e</code>
+                            </div>
+                            <button onclick="copyText('shortIdOutput', this)" class="interactive-press px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-white hover:text-slate-950 font-bold text-xs text-slate-200 transition shrink-0">Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ابزار ۳: کالبدشکاف لینک کانفیگ -->
+                <div class="md:col-span-12 liquid-glass hud-corners rounded-3xl p-5 sm:p-6 space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/90 pb-3.5 relative z-10">
+                        <div>
+                            <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                                <span>آنالیزور هوشمند لینک کانفیگ (Config Inspector)</span>
+                                <span class="text-[10px] font-num px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">LIVE PARSER</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400">لینک VLESS یا Trojan خود را وارد کنید تا پورت، SNI و نوع تانل آن درجا استخراج شود</p>
+                        </div>
+                        <button onclick="loadSampleConfig()" class="interactive-press text-xs text-white hover:underline self-start sm:self-auto">
+                            تست با کانفیگ نمونه آرگونیکس ←
+                        </button>
+                    </div>
+
+                    <div class="grid md:grid-cols-12 gap-3 items-center relative z-10" dir="ltr">
+                        <div class="md:col-span-8 flex gap-2">
+                            <input id="configInput" type="text" placeholder="vless://uuid@server:port?security=reality&sni=...#Argonix" class="w-full bg-slate-950/90 border border-slate-800 focus:border-white rounded-xl px-3.5 py-2.5 text-xs font-num text-slate-200 outline-none">
+                            <button onclick="inspectConfig()" class="btn-ax interactive-press text-slate-950 font-extrabold px-4 py-2.5 rounded-xl text-xs shrink-0">
+                                آنالیز کانفیگ
+                            </button>
+                        </div>
+                        <div id="configResult" class="md:col-span-4 bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-[11px] font-num text-slate-300 flex flex-wrap items-center justify-between gap-2">
+                            <span>Proto: <strong class="text-white">-</strong></span>
+                            <span>Port: <strong class="text-emerald-400">-</strong></span>
+                            <span>Type: <strong class="text-sky-400">-</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- فوتر -->
+        <footer id="status" class="pt-6 pb-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="font-cyber font-bold text-white tracking-wider">ARGONIX TEAM</span>
+                <span>— مهندسی شبکه و طراحی وب سه‌بعدی © 2026</span>
+            </div>
+            <div class="flex items-center gap-4 font-num">
+                <span class="flex items-center gap-1.5 text-emerald-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Helsinki Node: 99.9% Up</span>
+                </span>
+                <a href="https://sub.painshop.com.tr" target="_blank" class="text-white hover:underline">sub.painshop.com.tr</a>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- مودال ۱: پیش‌نمایش زنده قالب لینک ساب -->
+    <div id="demoModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div class="liquid-glass hud-corners rounded-3xl max-w-md w-full p-6 space-y-5 relative">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 relative z-10">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="font-bold text-sm text-white">دموی زنده قالب ساب ARGONIX UI</span>
+                </div>
+                <button onclick="closeDemoModal()" class="w-8 h-8 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white flex items-center justify-center font-bold">✕</button>
+            </div>
+
+            <div class="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-4 relative z-10">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] text-slate-400 block">نام اشتراک کاربر:</span>
+                        <span class="font-num font-bold text-base text-white">ARGONIX_VIP_USER</span>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">فعال • ۲۸ روز مانده</span>
+                </div>
+
+                <div class="space-y-1.5">
+                    <div class="flex justify-between text-xs font-num">
+                        <span class="text-slate-400">Used: <strong class="text-white">24.5 GB</strong></span>
+                        <span class="text-slate-300">Total: <strong>100 GB</strong></span>
+                    </div>
+                    <div class="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
+                        <div class="w-1/4 h-full rounded-full btn-ax"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-2 text-xs font-num" dir="ltr">
+                    <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+                        <span>🇫🇮 Finland Pro (VLESS-xHTTP)</span>
+                        <span class="text-emerald-400 font-bold">42 ms</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center">
+                        <span>⚡ ARGONIX Tunnel (Reality)</span>
+                        <span class="text-emerald-400 font-bold">49 ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 relative z-10">
+                <button onclick="closeDemoModal(); openOrderModal('سفارش قالب اختصاصی لینک ساب', 'نصب روی پاسارگارد و مرزبان', 'ARGONIX SUB UI');" class="btn-ax interactive-press w-full py-3 rounded-xl text-slate-950 font-extrabold text-center text-xs">
+                    سفارش این قالب برای پنل شما
+                </button>
+                <button onclick="closeDemoModal()" class="px-4 py-3 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">بستن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- مودال ۲ (جدید): پورتال هولوگرافیک صدور سفارش و فاکتور آنی -->
+    <div id="orderModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md">
+        <div class="liquid-glass hud-corners rounded-3xl max-w-md w-full p-6 space-y-5 relative">
+            <div class="holo-scanline"></div>
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3 relative z-10">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="font-bold text-sm text-white">پورتال ثبت سفارش هوشمند ARGONIX</span>
+                </div>
+                <button onclick="closeOrderModal()" class="w-8 h-8 rounded-lg bg-slate-800/80 text-slate-300 hover:text-white flex items-center justify-center font-bold">✕</button>
+            </div>
+
+            <div class="bg-slate-950/90 rounded-2xl p-4 border border-slate-800 space-y-3 relative z-10 text-xs">
+                <div class="flex justify-between items-center border-b border-slate-800/80 pb-2.5">
+                    <span class="text-slate-400">کد رهگیری سفارش:</span>
+                    <code id="orderCode" class="font-num font-bold text-sm text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded border border-emerald-500/30">AX-9482</code>
+                </div>
+                <div class="space-y-1">
+                    <span class="text-slate-400 block">سرویس انتخابی:</span>
+                    <div id="orderTitle" class="font-bold text-sm text-white">-</div>
+                </div>
+                <div class="flex justify-between items-center pt-1">
+                    <span class="text-slate-400">مشخصات:</span>
+                    <span id="orderSpecs" class="text-slate-200 font-semibold">-</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-slate-400">پروتکل / هسته:</span>
+                    <span id="orderProto" class="font-num text-white font-bold">-</span>
+                </div>
+            </div>
+
+            <div class="space-y-2.5 relative z-10">
+                <button onclick="copyOrderSummary(this)" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition">
+                    ۱. کپی مشخصات و کد پیگیری سفارش 📋
+                </button>
+                <div class="flex gap-2.5">
+                    <!-- وقتی آیدی تلگرام خودت را مشخص کردی، به جای t.me/ بگذار -->
+                    <a href="https://t.me/" target="_blank" class="btn-ax interactive-press w-full py-3 rounded-xl text-slate-950 font-extrabold text-center text-xs">
+                        ۲. ارسال کد به تلگرام پشتیبانی ✈️
+                    </a>
+                    <button onclick="closeOrderModal()" class="px-4 py-3 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- موتور جاوااسکریپت v4.0 -->
+    <script>
+        // ۱. سینتی‌سایزر صوتی چندآوایی + ویبره لمسی موبایل
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function playCyberSound(freq = 680, duration = 0.06, type = 'sine') {
+            if (navigator.vibrate) navigator.vibrate(12);
+            if (!soundEnabled) return;
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.75, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(0.055, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundToggleBtn').innerText = soundEnabled ? '🔊' : '🔇';
+            if (soundEnabled) playCyberSound(880, 0.08, 'triangle');
+        }
+
+        // ۲. موتور رمزشکنی سایبری متن‌ها (Matrix Text Scramble)
+        const cyberChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&*+<>';
+        function scrambleText(el, finalStr) {
+            if (!el) return;
+            let iter = 0;
+            const total = 12;
+            const interval = setInterval(() => {
+                el.innerText = finalStr.split('').map((ch, idx) => {
+                    if (ch === ' ') return ' ';
+                    if (idx < (iter / total) * finalStr.length) return finalStr[idx];
+                    return cyberChars[Math.floor(Math.random() * cyberChars.length)];
+                }).join('');
+                iter++;
+                if (iter > total) {
+                    el.innerText = finalStr;
+                    clearInterval(interval);
+                }
+            }, 28);
+        }
+
+        function scrambleElement(el) {
+            playCyberSound(920, 0.09, 'triangle');
+            scrambleText(el, 'ARGONIX STUDIO');
+        }
+
+        // ۳. سوییچر ۴ تم نئونی با افکت شوک EMP
+        const themes = [
+            { name: 'تم فیروزه‌ای', primary: '#00f2fe', secondary: '#3b82f6', rgb: '0, 242, 254', secRgb: '59, 130, 246' },
+            { name: 'تم ماتریکس', primary: '#10b981', secondary: '#059669', rgb: '16, 185, 129', secRgb: '5, 150, 105' },
+            { name: 'تم کوانتوم', primary: '#c084fc', secondary: '#ec4899', rgb: '192, 132, 252', secRgb: '236, 72, 153' },
+            { name: 'تم رد الرت', primary: '#f43f5e', secondary: '#f97316', rgb: '244, 63, 94', secRgb: '249, 115, 22' }
+        ];
+        let currentThemeIdx = 0;
+
+        function cycleNeonTheme() {
+            currentThemeIdx = (currentThemeIdx + 1) % themes.length;
+            const t = themes[currentThemeIdx];
+            const root = document.documentElement;
+            root.style.setProperty('--neon-primary', t.primary);
+            root.style.setProperty('--neon-secondary', t.secondary);
+            root.style.setProperty('--neon-rgb', t.rgb);
+            root.style.setProperty('--sec-rgb', t.secRgb);
+
+            document.getElementById('themeDot').style.backgroundColor = t.primary;
+            document.getElementById('themeDot').style.boxShadow = `0 0 10px ${t.primary}`;
+            scrambleText(document.getElementById('themeName'), t.name);
+
+            const emp = document.createElement('div');
+            emp.className = 'emp-flash';
+            document.body.appendChild(emp);
+            setTimeout(() => emp.remove(), 550);
+
+            playCyberSound(520, 0.12, 'triangle');
+        }
+
+        // ۴. افکت اختصاصی روی هر گزینه و کارت هنگام کلیک (Laser Sweep + Plasma Border)
+        document.addEventListener('pointerdown', (e) => {
+            playCyberSound(660, 0.05);
+
+            // موج شوک نئونی در محل لمس
+            const wave = document.createElement('div');
+            wave.className = 'click-shockwave';
+            wave.style.left = `${e.clientX}px`;
+            wave.style.top = `${e.clientY}px`;
+            document.body.appendChild(wave);
+            setTimeout(() => wave.remove(), 650);
+
+            // ذرات پلاسما
+            for (let i = 0; i < 7; i++) {
+                const spark = document.createElement('div');
+                spark.className = 'click-spark';
+                spark.style.left = `${e.clientX}px`;
+                spark.style.top = `${e.clientY}px`;
+                document.body.appendChild(spark);
+
+                const angle = (Math.PI * 2 * i) / 7 + (Math.random() * 0.4);
+                const distance = 26 + Math.random() * 36;
+
+                gsap.to(spark, {
+                    x: Math.cos(angle) * distance,
+                    y: Math.sin(angle) * distance,
+                    opacity: 0,
+                    scale: 0.1,
+                    duration: 0.48,
+                    ease: 'power2.out',
+                    onComplete: () => spark.remove()
+                });
+            }
+
+            // اگر روی یک کارت شیشه‌ای یا دکمه کلیک شد، پرتو لیزری از داخل آن رد شود
+            const targetCard = e.target.closest('.liquid-glass, .btn-ax, .proj-btn');
+            if (targetCard) {
+                targetCard.classList.add('cyber-clicked');
+                setTimeout(() => targetCard.classList.remove('cyber-clicked'), 420);
+
+                const beam = document.createElement('div');
+                beam.className = 'laser-sweep-beam';
+                targetCard.appendChild(beam);
+                setTimeout(() => beam.remove(), 650);
+            }
+        });
+
+        // ۵. چرخش سه‌بعدی کارت‌ها
+        document.querySelectorAll('.tilt-3d').forEach(card => {
+            card.addEventListener('pointermove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+
+                const rotateY = ((x / rect.width) - 0.5) * 9;
+                const rotateX = ((y / rect.height) - 0.5) * -9;
+                card.style.transform = `perspective(900px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            card.addEventListener('pointerleave', () => {
+                card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
+            });
+        });
+
+        // ۶. موتور کره سه‌بعدی چرخان (3D Wireframe Cyber Globe)
+        const globeCanvas = document.getElementById('globeCanvas');
+        const gCtx = globeCanvas.getContext('2d');
+        let globeNodes = [];
+        let globeAngleY = 0;
+        let globeSpeed = 0.014;
+
+        for (let i = 0; i < 65; i++) {
+            const phi = Math.acos(-1 + (2 * i) / 65);
+            const theta = Math.sqrt(65 * Math.PI) * phi;
+            globeNodes.push({
+                x: 82 * Math.cos(theta) * Math.sin(phi),
+                y: 82 * Math.sin(theta) * Math.sin(phi),
+                z: 82 * Math.cos(phi)
+            });
+        }
+
+        function boostGlobeSpin() {
+            playCyberSound(980, 0.12, 'triangle');
+            globeSpeed = 0.09;
+            gsap.to({ s: 0.09 }, {
+                s: 0.014,
+                duration: 1.8,
+                onUpdate: function() { globeSpeed = this.targets()[0].s; }
+            });
+        }
+
+        function renderGlobe() {
+            gCtx.clearRect(0, 0, 220, 220);
+            globeAngleY += globeSpeed;
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--neon-primary').trim() || '#00f2fe';
+
+            const projected = globeNodes.map(n => {
+                const rotX = n.x * Math.cos(globeAngleY) - n.z * Math.sin(globeAngleY);
+                const rotZ = n.z * Math.cos(globeAngleY) + n.x * Math.sin(globeAngleY);
+                const scale = 210 / (210 + rotZ);
+                return {
+                    px: 110 + rotX * scale,
+                    py: 110 + n.y * scale,
+                    z: rotZ,
+                    scale: scale
+                };
+            });
+
+            for (let i = 0; i < projected.length; i++) {
+                const p1 = projected[i];
+                for (let j = i + 1; j < projected.length; j++) {
+                    const p2 = projected[j];
+                    const d = Math.hypot(p1.px - p2.px, p1.py - p2.py);
+                    if (d < 34 && p1.z < 35 && p2.z < 35) {
+                        gCtx.beginPath();
+                        gCtx.moveTo(p1.px, p1.py);
+                        gCtx.lineTo(p2.px, p2.py);
+                        gCtx.strokeStyle = primaryColor;
+                        gCtx.globalAlpha = 0.28;
+                        gCtx.lineWidth = 0.7;
+                        gCtx.stroke();
+                    }
+                }
+                gCtx.beginPath();
+                gCtx.arc(p1.px, p1.py, p1.scale * 1.6, 0, Math.PI * 2);
+                gCtx.fillStyle = primaryColor;
+                gCtx.globalAlpha = p1.z < 0 ? 0.9 : 0.25;
+                gCtx.fill();
+            }
+            gCtx.globalAlpha = 1;
+            requestAnimationFrame(renderGlobe);
+        }
+
+        // ۷. پورتال هولوگرافیک سفارش
+        function openOrderModal(title, specs, proto) {
+            playCyberSound(840, 0.09, 'triangle');
+            const code = 'AX-' + Math.floor(1000 + Math.random() * 9000);
+            const m = document.getElementById('orderModal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+
+            scrambleText(document.getElementById('orderCode'), code);
+            scrambleText(document.getElementById('orderTitle'), title);
+            document.getElementById('orderSpecs').innerText = specs;
+            scrambleText(document.getElementById('orderProto'), proto);
+        }
+
+        function closeOrderModal() {
+            const m = document.getElementById('orderModal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        function copyOrderSummary(btn) {
+            const code = document.getElementById('orderCode').innerText;
+            const title = document.getElementById('orderTitle').innerText;
+            const specs = document.getElementById('orderSpecs').innerText;
+            const text = `سفارش جدید ARGONIX\nکد پیگیری: ${code}\nسرویس: ${title}\nمشخصات: ${specs}`;
+            navigator.clipboard.writeText(text);
+            const old = btn.innerText;
+            btn.innerText = 'مشخصات سفارش کپی شد ✔';
+            setTimeout(() => btn.innerText = old, 1600);
+        }
+
+        // ۸. کانفیگوراتور هوشمند پروژه
+        let currentEst = { title: 'قالب اختصاصی لینک ساب', time: '۲ روز کاری', tech: 'PasarGuard / Marzban UI' };
+        function selectProject(idx, title, time, tech) {
+            playCyberSound(780, 0.08, 'triangle');
+            currentEst = { title, time, tech };
+            scrambleText(document.getElementById('estTitle'), title);
+            scrambleText(document.getElementById('estTime'), time);
+            scrambleText(document.getElementById('estTech'), tech);
+
+            const btns = document.querySelectorAll('.proj-btn');
+            btns.forEach((b, i) => {
+                if (i === idx) {
+                    b.className = 'proj-btn interactive-press p-3 rounded-2xl border border-cyan-400 bg-white/10 text-right transition ' + (i === 2 ? 'col-span-2 sm:col-span-1' : '');
+                } else {
+                    b.className = 'proj-btn interactive-press p-3 rounded-2xl border border-slate-800 bg-slate-950/70 text-right transition ' + (i === 2 ? 'col-span-2 sm:col-span-1' : '');
+                }
+            });
+        }
+
+        function triggerEstimatorOrder() {
+            openOrderModal(currentEst.title, 'تحویل تضمینی: ' + currentEst.time, currentEst.tech);
+        }
+
+        // ۹. شمارنده‌ها
+        function runCounters() {
+            document.querySelectorAll('.counter').forEach(counter => {
+                const target = parseFloat(counter.getAttribute('data-target'));
+                const decimals = parseInt(counter.getAttribute('data-decimals') || '0');
+                const obj = { val: 0 };
+                gsap.to(obj, {
+                    val: target,
+                    duration: 2.1,
+                    ease: 'power2.out',
+                    onUpdate: () => { counter.innerText = obj.val.toFixed(decimals); }
+                });
+            });
+        }
+
+        function retriggerCounter(card) {
+            const counter = card.querySelector('.counter');
+            if (!counter) return;
+            const target = parseFloat(counter.getAttribute('data-target'));
+            const decimals = parseInt(counter.getAttribute('data-decimals') || '0');
+            const obj = { val: 0 };
+            gsap.to(obj, {
+                val: target,
+                duration: 1.2,
+                ease: 'power2.out',
+                onUpdate: () => { counter.innerText = obj.val.toFixed(decimals); }
+            });
+        }
+
+        // ۱۰. ابزارها + اسیلوسکوپ زنده پینگ
+        const waveCanvas = document.getElementById('pingWaveCanvas');
+        const wCtx = waveCanvas.getContext('2d');
+        let wavePoints = Array(36).fill(22);
+
+        function drawPingWave() {
+            wCtx.clearRect(0, 0, waveCanvas.width, waveCanvas.height);
+            wavePoints.shift();
+            const last = wavePoints[wavePoints.length - 1];
+            const next = Math.max(8, Math.min(38, last + (Math.random() - 0.5) * 12));
+            wavePoints.push(next);
+
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--neon-primary').trim() || '#00f2fe';
+            wCtx.beginPath();
+            for (let i = 0; i < wavePoints.length; i++) {
+                const x = (i / (wavePoints.length - 1)) * waveCanvas.width;
+                const y = wavePoints[i];
+                if (i === 0) wCtx.moveTo(x, y);
+                else wCtx.lineTo(x, y);
+            }
+            wCtx.strokeStyle = primaryColor;
+            wCtx.lineWidth = 2;
+            wCtx.stroke();
+        }
+        setInterval(drawPingWave, 140);
+
+        function generateTokens() {
+            playCyberSound(880, 0.07, 'triangle');
+            const uuid = crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            const hexChars = '0123456789abcdef';
+            let shortId = '';
+            for (let i = 0; i < 16; i++) shortId += hexChars[Math.floor(Math.random() * 16)];
+            
+            scrambleText(document.getElementById('uuidOutput'), uuid);
+            scrambleText(document.getElementById('shortIdOutput'), shortId);
+        }
+
+        function copyText(id, btn) {
+            const text = document.getElementById(id).innerText;
+            navigator.clipboard.writeText(text);
+            const old = btn.innerText;
+            btn.innerText = 'Copied ✔';
+            setTimeout(() => btn.innerText = old, 1400);
+        }
+
+        function loadSampleConfig() {
+            document.getElementById('configInput').value = 'vless://ab811288-a28b-4c33-9e36-3e3a8fd6a51e@13.140.80.51:2087?encryption=none&security=tls&sni=sub.painshop.com.tr&type=xhttp#ARGONIX-VIP';
+            inspectConfig();
+        }
+
+        function inspectConfig() {
+            const raw = document.getElementById('configInput').value.trim();
+            const box = document.getElementById('configResult');
+            if (!raw.includes('://')) {
+                box.innerHTML = '<span class="text-rose-400">لینک معتبر وارد کنید</span>';
+                return;
+            }
+            try {
+                const protocol = raw.split('://')[0].toUpperCase();
+                const url = new URL(raw.replace(/^[a-z0-9]+:\/\//i, 'http://'));
+                const port = url.port || '443';
+                const net = (url.searchParams.get('type') || 'tcp').toUpperCase();
+                const sec = (url.searchParams.get('security') || 'none').toUpperCase();
+                box.innerHTML = `
+                    <span>Proto: <strong class="text-white">${protocol}</strong></span>
+                    <span>Port: <strong class="text-emerald-400">${port}</strong></span>
+                    <span>Type: <strong class="text-sky-400">${net}/${sec}</strong></span>
+                `;
+            } catch (e) {
+                box.innerHTML = '<span class="text-amber-400">ساختار نامعتبر</span>';
+            }
+        }
+
+        function openDemoModal() {
+            playCyberSound(800, 0.08, 'triangle');
+            const m = document.getElementById('demoModal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+        function closeDemoModal() {
+            const m = document.getElementById('demoModal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        async function checkUserNetwork() {
+            const ipEl = document.getElementById('userIp');
+            const locEl = document.getElementById('userLoc');
+            const pingEl = document.getElementById('cfPing');
+            ipEl.innerText = 'Scanning...';
+
+            const start = performance.now();
+            try {
+                const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+                const text = await res.text();
+                const ping = Math.round(performance.now() - start);
+                pingEl.innerText = ping + ' ms';
+
+                const data = Object.fromEntries(text.trim().split('\n').map(line => line.split('=')));
+                scrambleText(ipEl, data.ip || 'Detected');
+                scrambleText(locEl, `${data.loc || 'Global'} / CF (${data.colo || 'Edge'})`);
+            } catch (e) {
+                ipEl.innerText = 'Protected IP';
+                locEl.innerText = 'Firewall Active';
+            }
+        }
+
+        // ۱۱. بوم شبکه نودهای پس‌زمینه هماهنگ با رنگ تم نئونی
+        const canvas = document.getElementById('cyberCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: -1000, y: -1000 };
+
+        window.addEventListener('pointermove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        for (let i = 0; i < 38; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 0.48,
+                vy: (Math.random() - 0.5) * 0.48,
+                r: Math.random() * 1.8 + 1
+            });
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--neon-primary').trim() || '#00f2fe';
+            const rgb = getComputedStyle(document.documentElement).getPropertyValue('--neon-rgb').trim() || '0, 242, 254';
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = primaryColor;
+                ctx.fill();
+
+                let mDist = Math.hypot(p.x - mouse.x, p.y - mouse.y);
+                if (mDist < 150) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    ctx.lineTo(mouse.x, mouse.y);
+                    ctx.strokeStyle = `rgba(${rgb}, ${1 - mDist / 150})`;
+                    ctx.lineWidth = 0.8;
+                    ctx.stroke();
+                }
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p2 = particles[j];
+                    let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+                    if (dist < 125) {
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        ctx.strokeStyle = `rgba(${rgb}, ${0.75 - dist / 125})`;
+                        ctx.lineWidth = 0.45;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateCanvas);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            generateTokens();
+            checkUserNetwork();
+            loadSampleConfig();
+            animateCanvas();
+            renderGlobe();
+            runCounters();
+            gsap.from('.hero-anim', { opacity: 0, y: 20, duration: 0.75, stagger: 0.15, ease: 'power3.out' });
+        });
+    </script>
+</body>
+</html>
